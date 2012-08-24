@@ -1,7 +1,7 @@
 package com.kg.util;
 
 /**
- * Copyright(c) 2008 Nicolas Martignole – Le Touilleur Express
+ * Copyright(c) 2008 Nicolas Martignole ï¿½ Le Touilleur Express
  * Modified by Kevin Gaudin: renamed methods with get / put to allow easy switching with Map implementations/
  * http://touilleur-express.fr
  * Distributed under Creative Commons License 2.0
@@ -44,15 +44,15 @@ public class NewLRUCache<K, V> {
     public NewLRUCache(int cacheSize) {
         this.cacheSize = (cacheSize < 1) ? 1000 : cacheSize;
         int initialCapacity = (int) (cacheSize * 0.75);
-        cache = new LinkedHashMap<K, SoftReference<V>>(initialCapacity, 0.75f,
-                true) {
+        cache = new LinkedHashMap<K, SoftReference<V>>(initialCapacity, 0.75f, true) {
+            private static final long serialVersionUID = -5987430860097328259L;
+
             @Override
             /**
-             * Returns true if the current map size is greater than NewLRUCache, wich means
+             * Returns true if the current map size is greater than NewLRUCache, which means
              * that the cache is full and we should drop the oldest entry.
              */
-            protected boolean removeEldestEntry(
-                    Map.Entry<K, SoftReference<V>> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<K, SoftReference<V>> eldest) {
                 return size() > NewLRUCache.this.cacheSize;
             }
         };

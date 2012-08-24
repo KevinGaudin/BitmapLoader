@@ -50,7 +50,7 @@ public class BitmapLoader {
      * A cache for storing the latest accessed bitmaps. If another call asks for
      * a larger resolution, we reload it and keep the latest.
      */
-    private static NewLRUCache<String, Bitmap> bmpCache = new NewLRUCache<String, Bitmap>(200);
+    private static NewLRUCache<String, Bitmap> bmpCache = new NewLRUCache<String, Bitmap>(500);
     /**
      * A cache for storing real dimensions of all accessed bitmaps. With this
      * the cost of the first pass is reduced when loading a previously accessed
@@ -81,6 +81,10 @@ public class BitmapLoader {
     private static FirstPassResult firstPass(Context context, Integer width,
             Integer height, InputStream input, int[] cachedDimension)
             throws IOException {
+        Log.d(LOG_TAG, "Requested " + width + " x "
+                + height);
+
+        
         FirstPassResult fpResult = new FirstPassResult();
 
         // First, get image size
@@ -99,10 +103,10 @@ public class BitmapLoader {
         int srcWidth = fpResult.options.outWidth;
         int srcHeight = fpResult.options.outHeight;
 
-        // Log.d(LOG_TAG, "Source picture has dimension " + srcWidth + " x "
-        // + srcHeight);
+        Log.d(LOG_TAG, "Source picture has dimension " + srcWidth + " x "
+         + srcHeight);
 
-        float srcImageFactor = (float) srcWidth / (float) srcHeight;
+        float srcImageRatio = (float) srcWidth / (float) srcHeight;
 
         // If no resolution given, use the device screen resolution
         if (width == null && height == null) {
@@ -111,32 +115,32 @@ public class BitmapLoader {
                     .getDefaultDisplay();
             fpResult.finalWidth = display.getWidth();
             fpResult.finalHeight = display.getHeight();
-            // Log.d(LOG_TAG, "Display is : " + fpResult.finalWidth + " x "
-            // + fpResult.finalHeight);
+             Log.d(LOG_TAG, "Display is : " + fpResult.finalWidth + " x "
+             + fpResult.finalHeight);
         } else if (width == null) {
             // If only one dimension is given, keep source proportions
-            fpResult.finalWidth = (int) (height * srcImageFactor);
+            fpResult.finalWidth = (int) (height * srcImageRatio);
             fpResult.finalHeight = height;
         } else if (height == null) {
             // If only one dimension is given, keep source proportions
-            fpResult.finalHeight = (int) (width / srcImageFactor);
+            fpResult.finalHeight = (int) (width / srcImageRatio);
             fpResult.finalWidth = width;
         } else {
             fpResult.finalWidth = width;
             fpResult.finalHeight = height;
         }
 
-        float requestedImageFactor = (float) fpResult.finalWidth
+        float requestedImageRatio = (float) fpResult.finalWidth
                 / (float) fpResult.finalHeight;
 
         // Switch requested orientation to allow best quality without
         // reloading if device orientation changes
-        if ((srcImageFactor > 1 && requestedImageFactor < 1)
-                || (srcImageFactor < 1 && requestedImageFactor > 1)) {
+        if ((srcImageRatio > 1 && requestedImageRatio < 1)
+                || (srcImageRatio < 1 && requestedImageRatio > 1)) {
             int oldValue = fpResult.finalWidth;
             fpResult.finalWidth = fpResult.finalHeight;
             fpResult.finalHeight = oldValue;
-            requestedImageFactor = 1 / requestedImageFactor;
+            requestedImageRatio = 1 / requestedImageRatio;
         }
 
         // 2 final requested dimensions are now given, adjust for best fit
@@ -144,10 +148,10 @@ public class BitmapLoader {
 
         // Calculates which dimension should be used to preserve aspect
         // ratio
-        if (requestedImageFactor <= srcImageFactor) {
-            fpResult.finalHeight = (int) (fpResult.finalWidth / srcImageFactor);
-        } else if (requestedImageFactor > srcImageFactor) {
-            fpResult.finalWidth = (int) (fpResult.finalHeight * srcImageFactor);
+        if (requestedImageRatio <= srcImageRatio) {
+            fpResult.finalHeight = (int) (fpResult.finalWidth / srcImageRatio);
+        } else if (requestedImageRatio > srcImageRatio) {
+            fpResult.finalWidth = (int) (fpResult.finalHeight * srcImageRatio);
         }
 
         // Calculate the sample size needed to load image with minimum
@@ -232,7 +236,7 @@ public class BitmapLoader {
             colorConfig = Bitmap.Config.RGB_565;
         }
 
-        Log.d(LOG_TAG, "Open Uri" + uri.toString());
+        Log.d(LOG_TAG, "" + width + "x" + height + " - Open Uri" + uri.toString());
         InputStream input = context.getContentResolver().openInputStream(uri);
 
         if (input == null)
@@ -257,7 +261,7 @@ public class BitmapLoader {
         dimensionCache.put(uri.toString(), dimensionToCache);
 
         if (fpInput == null) {
-            // We first pass input is null, so we can reuse the original input
+            // The first pass input is null, so we can reuse the original input
             // stream as it has not been used for the first pass.
             fpInput = input;
         } else {
